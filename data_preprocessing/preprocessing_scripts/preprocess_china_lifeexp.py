@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 import requests
-from sklearn.preprocessing import StandardScaler
 
 
 INDICATORS: Dict[str, str] = {
@@ -173,10 +172,7 @@ def update_preprocessing_details(
     year_max: int,
     feature_count: int,
     quality_stats: Dict[str, int],
-    missing_raw_clip: int,
-    missing_scaled_clip: int,
-    missing_raw_no_clip: int,
-    missing_scaled_no_clip: int,
+    missing_raw_base: int,
     latest_year_map: Dict[str, int | None],
 ) -> None:
     """Dynamically update quality and metadata sections in PREPROCESSING_DETAILS.md."""
@@ -191,11 +187,8 @@ def update_preprocessing_details(
             f"- `duplicate_year_rows_removed = {quality_stats['duplicate_year_rows_removed']}`",
             f"- `negative_values_fixed_to_nan = {quality_stats['negative_values_fixed_to_nan']}`",
             f"- `percent_out_of_range_fixed_to_nan = {quality_stats['percent_out_of_range_fixed_to_nan']}`",
-            f"- `outlier_values_clipped_iqr = {quality_stats['outlier_values_clipped_iqr']}`",
-            f"- `missing_values_final_raw_clip = {missing_raw_clip}`",
-            f"- `missing_values_final_scaled_clip = {missing_scaled_clip}`",
-            f"- `missing_values_final_raw_no_clip = {missing_raw_no_clip}`",
-            f"- `missing_values_final_scaled_no_clip = {missing_scaled_no_clip}`",
+            f"- `outlier_values_detected_by_iqr = {quality_stats['outlier_values_clipped_iqr']}`",
+            f"- `missing_values_final_raw_no_clip = {missing_raw_base}`",
         ]
     )
 
@@ -204,7 +197,7 @@ def update_preprocessing_details(
             f"- 年份范围（建模样本）：`{year_min}-{year_max}`",
             f"- 特征列数量（不含 `year` 与标签）：{feature_count}",
             "- 目标列：`life_exp_next_year`",
-            "- clip/no-clip 两套数据均可直接交付建模",
+            "- 交付基础数据：未标准化 + 未裁剪（fold内再做 clip/scale）",
         ]
     )
 
@@ -234,8 +227,8 @@ def update_preprocessing_details(
 
 def build_dataset(
     country: str, start_year: int, end_year: int
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, List[str], Dict[str, int | None], Dict[str, int]]:
-    """Build clipped and no-clip modeling datasets (raw and scaled)."""
+) -> Tuple[pd.DataFrame, List[str], Dict[str, int | None], Dict[str, int]]:
+    """Build base modeling dataset (raw + no-clip) for fold-level transforms."""
     frames = []
     latest_year_map: Dict[str, int | None] = {}
     for name, code in INDICATORS.items():
@@ -275,31 +268,11 @@ def build_dataset(
     feature_cols = [c for c in model_df.columns if c not in ["year", "life_exp_next_year"]]
     model_df = first_round_impute(model_df, feature_cols)
 
-    # Keep a no-clip version for model comparison.
-    model_df_no_clip = model_df.copy()
-
-    # Step 7: outlier clipping for model features
-    model_df_clip, clipped_count = clip_outliers_iqr(model_df, feature_cols)
+    # Detect potential outliers for reporting; do not clip here.
+    _, clipped_count = clip_outliers_iqr(model_df, feature_cols)
     quality_stats["outlier_values_clipped_iqr"] = clipped_count
 
-    # Standardized versions
-    scaler_no_clip = StandardScaler()
-    scaled_df_no_clip = model_df_no_clip.copy()
-    scaled_df_no_clip[feature_cols] = scaler_no_clip.fit_transform(model_df_no_clip[feature_cols])
-
-    scaler_clip = StandardScaler()
-    scaled_df_clip = model_df_clip.copy()
-    scaled_df_clip[feature_cols] = scaler_clip.fit_transform(model_df_clip[feature_cols])
-
-    return (
-        model_df_clip,
-        scaled_df_clip,
-        model_df_no_clip,
-        scaled_df_no_clip,
-        feature_cols,
-        latest_year_map,
-        quality_stats,
-    )
+    return model_df, feature_cols, latest_year_map, quality_stats
 
 
 def main() -> None:
@@ -330,60 +303,37 @@ def main() -> None:
     outdir = Path(args.outdir) if args.outdir else (script_root / "dataset")
     outdir.mkdir(parents=True, exist_ok=True)
 
-    (
-        raw_df_clip,
-        scaled_df_clip,
-        raw_df_no_clip,
-        scaled_df_no_clip,
-        feature_cols,
-        latest_year_map,
-        quality_stats,
-    ) = build_dataset(
+    raw_df_base, feature_cols, latest_year_map, quality_stats = build_dataset(
         country=args.country,
         start_year=args.start_year,
         end_year=args.end_year,
     )
 
-    raw_path = outdir / "wdi_china_lifeexp_model_ready.csv"
-    scaled_path = outdir / "wdi_china_lifeexp_model_ready_scaled.csv"
-    raw_no_clip_path = outdir / "wdi_china_lifeexp_model_ready_no_clip.csv"
-    scaled_no_clip_path = outdir / "wdi_china_lifeexp_model_ready_scaled_no_clip.csv"
+    base_path = outdir / "wdi_china_lifeexp_model_ready_no_clip.csv"
 
-    raw_df_clip.to_csv(raw_path, index=False)
-    scaled_df_clip.to_csv(scaled_path, index=False)
-    raw_df_no_clip.to_csv(raw_no_clip_path, index=False)
-    scaled_df_no_clip.to_csv(scaled_no_clip_path, index=False)
+    raw_df_base.to_csv(base_path, index=False)
 
     print("Preprocessing done.")
-    print(f"- Raw dataset (clip):    {raw_path}")
-    print(f"- Scaled dataset (clip): {scaled_path}")
-    print(f"- Raw dataset (no-clip): {raw_no_clip_path}")
-    print(f"- Scaled dataset (no-clip): {scaled_no_clip_path}")
-    print(f"- Rows: {len(raw_df_clip)}")
-    print(f"- Year range: {int(raw_df_clip['year'].min())} - {int(raw_df_clip['year'].max())}")
+    print(f"- Base dataset (raw no-clip): {base_path}")
+    print(f"- Rows: {len(raw_df_base)}")
+    print(f"- Year range: {int(raw_df_base['year'].min())} - {int(raw_df_base['year'].max())}")
     print(f"- Feature count: {len(feature_cols)}")
     print(f"- Quality duplicate_year_rows_removed: {quality_stats['duplicate_year_rows_removed']}")
     print(f"- Quality negative_values_fixed_to_nan: {quality_stats['negative_values_fixed_to_nan']}")
     print(f"- Quality percent_out_of_range_fixed_to_nan: {quality_stats['percent_out_of_range_fixed_to_nan']}")
-    print(f"- Quality outlier_values_clipped_iqr: {quality_stats['outlier_values_clipped_iqr']}")
-    print(f"- Missing values (raw clip): {int(raw_df_clip.isna().sum().sum())}")
-    print(f"- Missing values (scaled clip): {int(scaled_df_clip.isna().sum().sum())}")
-    print(f"- Missing values (raw no-clip): {int(raw_df_no_clip.isna().sum().sum())}")
-    print(f"- Missing values (scaled no-clip): {int(scaled_df_no_clip.isna().sum().sum())}")
+    print(f"- Quality outlier_values_detected_by_iqr: {quality_stats['outlier_values_clipped_iqr']}")
+    print(f"- Missing values (raw no-clip): {int(raw_df_base.isna().sum().sum())}")
 
     # Keep documentation metrics synchronized after each run.
     details_path = Path(args.details_path) if args.details_path else (script_root / "PREPROCESSING_DETAILS.md")
     update_preprocessing_details(
         details_path=details_path,
-        rows_total=len(raw_df_clip),
-        year_min=int(raw_df_clip["year"].min()),
-        year_max=int(raw_df_clip["year"].max()),
+        rows_total=len(raw_df_base),
+        year_min=int(raw_df_base["year"].min()),
+        year_max=int(raw_df_base["year"].max()),
         feature_count=len(feature_cols),
         quality_stats=quality_stats,
-        missing_raw_clip=int(raw_df_clip.isna().sum().sum()),
-        missing_scaled_clip=int(scaled_df_clip.isna().sum().sum()),
-        missing_raw_no_clip=int(raw_df_no_clip.isna().sum().sum()),
-        missing_scaled_no_clip=int(scaled_df_no_clip.isna().sum().sum()),
+        missing_raw_base=int(raw_df_base.isna().sum().sum()),
         latest_year_map=latest_year_map,
     )
 
