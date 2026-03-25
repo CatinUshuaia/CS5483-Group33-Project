@@ -2,8 +2,8 @@
 
 ## 0. 快速运行
 - 在 `CS5483-Group33-Project` 目录执行依赖安装：`pip install pandas requests scikit-learn`
-- 执行脚本：`python preprocess_china_lifeexp.py`
-- 指定参数执行：`python preprocess_china_lifeexp.py --country CHN --start-year 1995 --end-year 2023 --outdir .`
+- 执行脚本（默认输出到 `data_preprocessing/dataset`）：`python data_preprocessing/preprocessing_scripts/preprocess_china_lifeexp.py`
+- 指定参数执行：`python data_preprocessing/preprocessing_scripts/preprocess_china_lifeexp.py --country CHN --start-year 1995 --end-year 2023 --outdir data_preprocessing/dataset --details-path data_preprocessing/PREPROCESSING_DETAILS.md`
 
 ## 1. 任务与数据范围
 - 任务类型：回归
@@ -60,12 +60,12 @@
 ## 4. 交付文件
 
 ### 4.1 最终数据集（裁剪版）
-- `wdi_china_lifeexp_model_ready.csv`（未标准化，异常值裁剪版）
-- `wdi_china_lifeexp_model_ready_scaled.csv`（标准化，异常值裁剪版）
+- `data_preprocessing/dataset/wdi_china_lifeexp_model_ready.csv`（未标准化，异常值裁剪版）
+- `data_preprocessing/dataset/wdi_china_lifeexp_model_ready_scaled.csv`（标准化，异常值裁剪版）
 
 ### 4.2 最终数据集（未裁剪版）
-- `wdi_china_lifeexp_model_ready_no_clip.csv`（未标准化，未裁剪版）
-- `wdi_china_lifeexp_model_ready_scaled_no_clip.csv`（标准化，未裁剪版）
+- `data_preprocessing/dataset/wdi_china_lifeexp_model_ready_no_clip.csv`（未标准化，未裁剪版）
+- `data_preprocessing/dataset/wdi_china_lifeexp_model_ready_scaled_no_clip.csv`（标准化，未裁剪版）
 
 ## 5. 质量报告整合结果（当前版本）
 <!-- AUTO_QUALITY_START -->

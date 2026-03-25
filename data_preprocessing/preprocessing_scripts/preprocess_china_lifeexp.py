@@ -303,6 +303,7 @@ def build_dataset(
 
 
 def main() -> None:
+    script_root = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description="Preprocess WDI data for China next-year life expectancy prediction.")
     parser.add_argument("--country", type=str, default="CHN", help="Country code, default: CHN")
     parser.add_argument("--start-year", type=int, default=1995, help="Start year, default: 1995")
@@ -312,10 +313,21 @@ def main() -> None:
         default=2023,
         help="End year, default: 2023 (recommended for March 2026 data completeness)",
     )
-    parser.add_argument("--outdir", type=str, default=".", help="Output directory, default: current folder")
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default=None,
+        help="Output directory, default: data_preprocessing/dataset",
+    )
+    parser.add_argument(
+        "--details-path",
+        type=str,
+        default=None,
+        help="Path to PREPROCESSING_DETAILS.md, default: data_preprocessing/PREPROCESSING_DETAILS.md",
+    )
     args = parser.parse_args()
 
-    outdir = Path(args.outdir)
+    outdir = Path(args.outdir) if args.outdir else (script_root / "dataset")
     outdir.mkdir(parents=True, exist_ok=True)
 
     (
@@ -360,7 +372,7 @@ def main() -> None:
     print(f"- Missing values (scaled no-clip): {int(scaled_df_no_clip.isna().sum().sum())}")
 
     # Keep documentation metrics synchronized after each run.
-    details_path = outdir / "PREPROCESSING_DETAILS.md"
+    details_path = Path(args.details_path) if args.details_path else (script_root / "PREPROCESSING_DETAILS.md")
     update_preprocessing_details(
         details_path=details_path,
         rows_total=len(raw_df_clip),
