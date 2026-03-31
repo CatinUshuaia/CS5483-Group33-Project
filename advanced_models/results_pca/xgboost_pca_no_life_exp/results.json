@@ -1,0 +1,32 @@
+{
+  "model": "XGBoost",
+  "tag": "pca_no_life_exp",
+  "n_components_requested": 8,
+  "n_components_actual": 8,
+  "best_params": {
+    "n_estimators": 200,
+    "max_depth": 5,
+    "learning_rate": 0.05,
+    "subsample": 1.0,
+    "reg_lambda": 1,
+    "objective": "reg:squarederror",
+    "random_state": 42,
+    "verbosity": 0
+  },
+  "test_metrics": {
+    "RMSE": 0.30984351010418026,
+    "MAE": 0.258487609863284,
+    "R2": -9.698873811974055,
+    "MAPE(%)": 0.3308711579893842
+  },
+  "pc_importances": {
+    "PC1": 0.5215350985527039,
+    "PC2": 0.40324917435646057,
+    "PC3": 0.05179081857204437,
+    "PC4": 0.00020888831932097673,
+    "PC5": 0.007811396382749081,
+    "PC6": 1.4440480299526826e-05,
+    "PC7": 0.015029847621917725,
+    "PC8": 0.0003603535005822778
+  }
+}
