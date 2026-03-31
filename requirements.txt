@@ -1,3 +1,6 @@
 pandas
 requests
 scikit-learn
+xgboost
+matplotlib
+joblib

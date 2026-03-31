@@ -1,0 +1,51 @@
+{
+  "model": "Random Forest",
+  "best_params": {
+    "n_estimators": 100,
+    "max_depth": 3,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "max_features": 0.5,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "test_metrics": {
+    "RMSE": 1.1802117161246857,
+    "MAE": 1.1680289791666851,
+    "R2": -154.22908608318156,
+    "MAPE(%)": 1.4958522082771162
+  },
+  "feature_importances": {
+    "life_exp": 0.1467765519376122,
+    "gdp_per_capita": 0.12100317515716101,
+    "health_exp_gdp": 0.017279480827261794,
+    "health_exp_percap": 0.005974901589660222,
+    "pm25": 0.0056758578115474025,
+    "urban_pop_pct": 0.07330543400741948,
+    "pop_65_plus_pct": 0.12339603751301079,
+    "unemployment": 0.02653931747269699,
+    "med_beds": 0.011884824011770649,
+    "infant_mortality": 0.13125629946864625,
+    "total_fertility": 0.03959990539563595,
+    "gdp_per_capita_lag1": 0.01991820363924664,
+    "health_exp_gdp_lag1": 0.005697032511954248,
+    "health_exp_percap_lag1": 0.006082377345724348,
+    "pm25_lag1": 0.009343775600798868,
+    "urban_pop_pct_lag1": 0.012016573782792252,
+    "pop_65_plus_pct_lag1": 0.04619808117105079,
+    "unemployment_lag1": 0.010915399566244922,
+    "med_beds_lag1": 0.010431622058628343,
+    "infant_mortality_lag1": 0.06970650760711769,
+    "total_fertility_lag1": 0.028159235187295878,
+    "gdp_per_capita_pct_change": 0.007812905373394607,
+    "health_exp_gdp_pct_change": 0.0016578536017923503,
+    "health_exp_percap_pct_change": 0.003632591809085238,
+    "pm25_pct_change": 0.011711982628468225,
+    "urban_pop_pct_pct_change": 0.003373883519003153,
+    "pop_65_plus_pct_pct_change": 0.005553396560793908,
+    "unemployment_pct_change": 0.002595404140329578,
+    "med_beds_pct_change": 0.037240062232939936,
+    "infant_mortality_pct_change": 0.004406889064746357,
+    "total_fertility_pct_change": 0.0008544374061700048
+  }
+}
