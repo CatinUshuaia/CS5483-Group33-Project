@@ -74,12 +74,12 @@ If a `year` column exists, it is excluded from training features but kept for re
 
 Run the following commands from the project root directory.
 
-### 1. Random Forest parameter search
+### 1. Random Forest training / evaluation
 ```bash
 python modeling/train_rf_models.py
 ```
 
-### 2. XGBoost parameter search
+### 2. XGBoost training / evaluation
 ```bash
 python modeling/train_xgboost_models.py
 ```
@@ -105,6 +105,24 @@ python modeling/final_xgboost_test.py
 python modeling/plot_rf_results.py
 python modeling/plot_xgboost_results.py
 ```
+
+---
+
+## Current Test Results
+
+### XGBoost (no_clip)
+- **Test MAE:** 0.793522
+- **Test RMSE:** 0.799156
+
+### Random Forest (no_clip)
+- **Test MAE:** 1.026638
+- **Test RMSE:** 1.039817
+
+### Brief Analysis
+- Both models can complete the prediction pipeline successfully on the test set.
+- Under the current settings, **XGBoost performs better than Random Forest** on the `no_clip` dataset, with lower MAE and RMSE.
+- This suggests that XGBoost captures the nonlinear relationships in the life expectancy data more effectively in the current experiment.
+- In addition to prediction results, the project also outputs **Top-10 feature importance rankings** for basic model interpretation.
 
 ---
 
