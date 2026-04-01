@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Prediction Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, "Helvetica Neue", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 40px auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    select {
+      font-size: 15px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      min-width: 240px;
+      background: white;
+    }
+
+    .status {
+      text-align: center;
+      margin: 8px 0 24px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .metric-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .chart-block {
+      margin-bottom: 30px;
+    }
+
+    .chart-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 14px;
+      text-align: center;
+    }
+
+    #chart1,
+    #chart2,
+    #chart3 {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .info-box {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+    }
+
+    .info-box h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .info-box p {
+      margin: 6px 0;
+      font-size: 15px;
+    }
+
+    @media (max-width: 900px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px auto;
+        padding: 16px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .control-group {
+        justify-content: space-between;
+      }
+
+      select {
+        width: 100%;
+      }
+
+      #chart1,
+      #chart2,
+      #chart3 {
+        height: 360px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Model Prediction Visualization</h1>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="algorithmSelect">Select Model:</label>
+          <select id="algorithmSelect">
+            <option value="lasso">Lasso</option>
+            <option value="linear_regression">Linear Regression</option>
+            <option value="ridge">Ridge</option>
+            <option value="rf_clip">Random Forest (clip)</option>
+            <option value="rf_no_clip">Random Forest (no clip)</option>
+            <option value="xgb_no_clip">XGBoost (no clip)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="status" id="status">Loading data...</div>
+
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-label">RMSE</div>
+          <div class="metric-value" id="rmseValue">-</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">MAE</div>
+          <div class="metric-value" id="maeValue">-</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">R²</div>
+          <div class="metric-value" id="r2Value">-</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">MAPE (%)</div>
+          <div class="metric-value" id="mapeValue">-</div>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title">1. Actual vs Predicted</div>
+        <div id="chart1"></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title" id="importanceTitle">2. Top 15 Coefficients / Feature Importance</div>
+        <div id="chart2"></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title">3. Residuals on Test Set</div>
+        <div id="chart3"></div>
+      </div>
+
+      <div class="info-box">
+        <h3>Current Model Information</h3>
+        <p><strong>Algorithm:</strong> <span id="algoName">-</span></p>
+        <p><strong>Model Name:</strong> <span id="modelName">-</span></p>
+        <p><strong>Year Range:</strong> <span id="yearRange">-</span></p>
+        <p><strong>Sample Count:</strong> <span id="sampleCount">-</span></p>
+        <p><strong>Importance Type:</strong> <span id="importanceType">-</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileMap = {
+      lasso: {
+        label: "Lasso",
+        type: "linear",
+        predictionCsv: "./baseline_models/results/lasso/test_predictions.csv",
+        resultJson: "./baseline_models/results/lasso/results.json"
+      },
+      linear_regression: {
+        label: "Linear Regression",
+        type: "linear",
+        predictionCsv: "./baseline_models/results/linear_regression/test_predictions.csv",
+        resultJson: "./baseline_models/results/linear_regression/results.json"
+      },
+      ridge: {
+        label: "Ridge",
+        type: "linear",
+        predictionCsv: "./baseline_models/results/ridge/test_predictions.csv",
+        resultJson: "./baseline_models/results/ridge/results.json"
+      },
+      rf_clip: {
+        label: "Random Forest (clip)",
+        type: "tree",
+        predictionCsv: "./modeling/outputs/rf_test_predictions_clip.csv",
+        importanceCsv: "./modeling/outputs/rf_feature_importance_clip.csv"
+      },
+      rf_no_clip: {
+        label: "Random Forest (no clip)",
+        type: "tree",
+        predictionCsv: "./modeling/outputs/rf_test_predictions_no_clip.csv",
+        importanceCsv: "./modeling/outputs/rf_feature_importance_no_clip.csv"
+      },
+      xgb_no_clip: {
+        label: "XGBoost (no clip)",
+        type: "tree",
+        predictionCsv: "./modeling/outputs/xgb_test_predictions_no_clip.csv",
+        importanceCsv: "./modeling/outputs/xgb_feature_importance_no_clip.csv"
+      }
+    };
+
+    const algorithmSelect = document.getElementById("algorithmSelect");
+    const statusEl = document.getElementById("status");
+
+    const algoNameEl = document.getElementById("algoName");
+    const modelNameEl = document.getElementById("modelName");
+    const yearRangeEl = document.getElementById("yearRange");
+    const sampleCountEl = document.getElementById("sampleCount");
+    const importanceTypeEl = document.getElementById("importanceType");
+    const importanceTitleEl = document.getElementById("importanceTitle");
+
+    const rmseValueEl = document.getElementById("rmseValue");
+    const maeValueEl = document.getElementById("maeValue");
+    const r2ValueEl = document.getElementById("r2Value");
+    const mapeValueEl = document.getElementById("mapeValue");
+
+    const chart1 = echarts.init(document.getElementById("chart1"));
+    const chart2 = echarts.init(document.getElementById("chart2"));
+    const chart3 = echarts.init(document.getElementById("chart3"));
+
+    async function loadCSV(filePath) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(filePath, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            resolve(results.data);
+          },
+          error: function(error) {
+            reject(error);
+          }
+        });
+      });
+    }
+
+    async function loadJSON(filePath) {
+      const response = await fetch(filePath);
+      if (!response.ok) {
+        throw new Error(`Failed to load JSON: ${filePath}`);
+      }
+      return await response.json();
+    }
+
+    function formatNumber(value, digits = 4) {
+      if (value === undefined || value === null || Number.isNaN(Number(value))) {
+        return "-";
+      }
+      return Number(value).toFixed(digits);
+    }
+
+    function normalizePredictionRows(rows) {
+      const normalized = rows.map(row => {
+        if ("actual" in row && "predicted" in row) {
+          const actual = Number(row.actual);
+          const predicted = Number(row.predicted);
+          return {
+            year: Number(row.year),
+            actual,
+            predicted,
+            residual: Number.isNaN(Number(row.residual)) ? actual - predicted : Number(row.residual)
+          };
+        }
+
+        if ("y_true" in row && "y_pred" in row) {
+          const actual = Number(row.y_true);
+          const predicted = Number(row.y_pred);
+          return {
+            year: Number(row.year),
+            actual,
+            predicted,
+            residual: actual - predicted
+          };
+        }
+
+        return {
+          year: NaN,
+          actual: NaN,
+          predicted: NaN,
+          residual: NaN
+        };
+      });
+
+      return normalized.filter(item =>
+        !Number.isNaN(item.year) &&
+        !Number.isNaN(item.actual) &&
+        !Number.isNaN(item.predicted) &&
+        !Number.isNaN(item.residual)
+      );
+    }
+
+    function normalizeImportanceRows(rows) {
+      return rows
+        .map(row => ({
+          feature: row.feature,
+          importance: Number(row.importance)
+        }))
+        .filter(item => item.feature && !Number.isNaN(item.importance));
+    }
+
+    function calculateMetrics(data) {
+      if (!data.length) {
+        return { RMSE: null, MAE: null, R2: null, MAPE: null };
+      }
+
+      const actual = data.map(d => d.actual);
+      const predicted = data.map(d => d.predicted);
+      const residuals = data.map(d => d.actual - d.predicted);
+
+      const mae = residuals.reduce((sum, r) => sum + Math.abs(r), 0) / residuals.length;
+      const mse = residuals.reduce((sum, r) => sum + r * r, 0) / residuals.length;
+      const rmse = Math.sqrt(mse);
+
+      const meanActual = actual.reduce((sum, v) => sum + v, 0) / actual.length;
+      const ssRes = residuals.reduce((sum, r) => sum + r * r, 0);
+      const ssTot = actual.reduce((sum, v) => sum + Math.pow(v - meanActual, 2), 0);
+      const r2 = ssTot === 0 ? null : 1 - ssRes / ssTot;
+
+      const validMapeItems = actual.filter(v => v !== 0).length;
+      const mape = validMapeItems === 0
+        ? null
+        : actual.reduce((sum, v, i) => {
+            if (v === 0) return sum;
+            return sum + Math.abs((v - predicted[i]) / v);
+          }, 0) / validMapeItems * 100;
+
+      return { RMSE: rmse, MAE: mae, R2: r2, MAPE: mape };
+    }
+
+    function updateMetricCards(metrics) {
+      rmseValueEl.textContent = formatNumber(metrics.RMSE);
+      maeValueEl.textContent = formatNumber(metrics.MAE);
+      r2ValueEl.textContent = formatNumber(metrics.R2);
+      mapeValueEl.textContent = formatNumber(metrics.MAPE);
+    }
+
+    function renderActualPredictedChart(label, data) {
+      const years = data.map(item => item.year);
+      const actualValues = data.map(item => item.actual);
+      const predictedValues = data.map(item => item.predicted);
+
+      const allValues = [...actualValues, ...predictedValues];
+      const minValue = Math.min(...allValues);
+      const maxValue = Math.max(...allValues);
+      const padding = Math.max((maxValue - minValue) * 0.2, 0.05);
+      const yMin = Number((minValue - padding).toFixed(3));
+      const yMax = Number((maxValue + padding).toFixed(3));
+
+      chart1.setOption({
+        title: {
+          text: `${label} - Actual vs Predicted (Test 2019-2022)`,
+          left: "center"
+        },
+        tooltip: {
+          trigger: "axis"
+        },
+        legend: {
+          top: 35,
+          data: ["Actual", "Predicted"]
+        },
+        grid: {
+          left: "8%",
+          right: "6%",
+          top: 90,
+          bottom: 60
+        },
+        xAxis: {
+          type: "category",
+          name: "Year",
+          data: years
+        },
+        yAxis: {
+          type: "value",
+          name: "Life Expectancy (next year)",
+          min: yMin,
+          max: yMax,
+          scale: true
+        },
+        series: [
+          {
+            name: "Actual",
+            type: "line",
+            smooth: false,
+            symbol: "circle",
+            symbolSize: 10,
+            data: actualValues
+          },
+          {
+            name: "Predicted",
+            type: "line",
+            smooth: false,
+            symbol: "rect",
+            symbolSize: 10,
+            lineStyle: {
+              type: "dashed",
+              width: 3
+            },
+            data: predictedValues
+          }
+        ]
+      }, true);
+    }
+
+    function renderLinearImportanceChart(label, resultJson) {
+      const coefficients = resultJson.coefficients || {};
+
+      const coefficientArray = Object.entries(coefficients)
+        .filter(([key]) => key !== "intercept")
+        .map(([name, value]) => ({
+          name,
+          value: Number(value),
+          absValue: Math.abs(Number(value))
+        }))
+        .sort((a, b) => b.absValue - a.absValue)
+        .slice(0, 15);
+
+      const featureNames = coefficientArray.map(item => item.name).reverse();
+      const coefficientValues = coefficientArray.map(item => item.value).reverse();
+
+      chart2.setOption({
+        title: {
+          text: `${label} - Top 15 Coefficients (Magnitude)`,
+          left: "center"
+        },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" }
+        },
+        grid: {
+          left: "22%",
+          right: "8%",
+          top: 70,
+          bottom: 40
+        },
+        xAxis: {
+          type: "value",
+          name: "Coefficient Value"
+        },
+        yAxis: {
+          type: "category",
+          data: featureNames
+        },
+        series: [
+          {
+            name: "Coefficient",
+            type: "bar",
+            data: coefficientValues,
+            itemStyle: {
+              color: function(params) {
+                return params.value >= 0 ? "#73c476" : "#e07a73";
+              }
+            }
+          }
+        ]
+      }, true);
+    }
+
+    function renderTreeImportanceChart(label, importanceRows) {
+      const topItems = [...importanceRows]
+        .sort((a, b) => b.importance - a.importance)
+        .slice(0, 15);
+
+      const featureNames = topItems.map(item => item.feature).reverse();
+      const importanceValues = topItems.map(item => item.importance).reverse();
+
+      chart2.setOption({
+        title: {
+          text: `${label} - Top 15 Feature Importance`,
+          left: "center"
+        },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" }
+        },
+        grid: {
+          left: "22%",
+          right: "8%",
+          top: 70,
+          bottom: 40
+        },
+        xAxis: {
+          type: "value",
+          name: "Importance"
+        },
+        yAxis: {
+          type: "category",
+          data: featureNames
+        },
+        series: [
+          {
+            name: "Importance",
+            type: "bar",
+            data: importanceValues
+          }
+        ]
+      }, true);
+    }
+
+    function renderResidualChart(label, data) {
+      const years = data.map(item => item.year);
+      const residualValues = data.map(item => item.residual);
+
+      const maxAbsResidual = Math.max(...residualValues.map(v => Math.abs(v)));
+      const padding = Math.max(maxAbsResidual * 0.15, 0.05);
+      const yMin = Number((Math.min(...residualValues, 0) - padding).toFixed(3));
+      const yMax = Number((Math.max(...residualValues, 0) + padding).toFixed(3));
+
+      chart3.setOption({
+        title: {
+          text: `${label} - Residuals on Test Set`,
+          left: "center"
+        },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" }
+        },
+        grid: {
+          left: "8%",
+          right: "6%",
+          top: 70,
+          bottom: 60
+        },
+        xAxis: {
+          type: "category",
+          name: "Year",
+          data: years
+        },
+        yAxis: {
+          type: "value",
+          name: "Residual (Actual - Predicted)",
+          min: yMin,
+          max: yMax,
+          scale: true
+        },
+        series: [
+          {
+            name: "Residual",
+            type: "bar",
+            data: residualValues
+          }
+        ]
+      }, true);
+    }
+
+    function updateInfoBox(config, normalizedPredictionData, modelName, importanceType) {
+      algoNameEl.textContent = config.label;
+      modelNameEl.textContent = modelName;
+      sampleCountEl.textContent = normalizedPredictionData.length;
+      importanceTypeEl.textContent = importanceType;
+
+      if (normalizedPredictionData.length > 0) {
+        const years = normalizedPredictionData.map(item => item.year);
+        yearRangeEl.textContent = `${Math.min(...years)} - ${Math.max(...years)}`;
+      } else {
+        yearRangeEl.textContent = "-";
+      }
+    }
+
+    async function updateView() {
+      const selectedKey = algorithmSelect.value;
+      const config = fileMap[selectedKey];
+      statusEl.textContent = "Loading data...";
+
+      try {
+        const rawPredictionRows = await loadCSV(config.predictionCsv);
+        const predictionData = normalizePredictionRows(rawPredictionRows);
+
+        if (!predictionData.length) {
+          throw new Error("Prediction data is empty or invalid.");
+        }
+
+        renderActualPredictedChart(config.label, predictionData);
+        renderResidualChart(config.label, predictionData);
+
+        if (config.type === "linear") {
+          const resultJson = await loadJSON(config.resultJson);
+          const metrics = resultJson.test_metrics || {};
+          renderLinearImportanceChart(config.label, resultJson);
+          updateMetricCards({
+            RMSE: metrics.RMSE,
+            MAE: metrics.MAE,
+            R2: metrics.R2,
+            MAPE: metrics["MAPE(%)"]
+          });
+          importanceTitleEl.textContent = "2. Top 15 Coefficients (Magnitude)";
+          updateInfoBox(config, predictionData, resultJson.model || config.label, "Coefficient");
+        } else {
+          const rawImportanceRows = await loadCSV(config.importanceCsv);
+          const importanceData = normalizeImportanceRows(rawImportanceRows);
+
+          if (!importanceData.length) {
+            throw new Error("Importance data is empty or invalid.");
+          }
+
+          renderTreeImportanceChart(config.label, importanceData);
+          updateMetricCards(calculateMetrics(predictionData));
+          importanceTitleEl.textContent = "2. Top 15 Feature Importance";
+          updateInfoBox(config, predictionData, config.label, "Feature Importance");
+        }
+
+        statusEl.textContent = "Data loaded successfully.";
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = `Failed to load data: ${error.message}`;
+      }
+    }
+
+    algorithmSelect.addEventListener("change", updateView);
+
+    window.addEventListener("resize", () => {
+      chart1.resize();
+      chart2.resize();
+      chart3.resize();
+    });
+
+    updateView();
+  </script>
+</body>
+</html>
