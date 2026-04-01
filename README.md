@@ -65,3 +65,52 @@ Default behavior:
 ## License
 
 This project is licensed under the MIT License. See `LICENSE`.
+
+## Frontend Visualization
+
+This project also includes a frontend visualization page for comparing prediction results across different models. The page allows users to switch between models in the browser and view the corresponding prediction curves, coefficients or feature importance, and residual plots.
+
+### Supported Visualizations
+
+- **Actual vs Predicted** line chart
+- **Top Coefficients** for linear models
+- **Feature Importance** for tree-based models
+- **Residuals on Test Set**
+- free switching between multiple models in the browser
+
+### Supported Models
+
+- Lasso
+- Linear Regression
+- Ridge
+- Random Forest (clip)
+- Random Forest (no clip)
+- XGBoost (no clip)
+
+### How to Launch the Frontend
+
+Open a terminal and enter the root directory of this project:
+
+```bash
+cd ~/Desktop/CS5483-Group33-Project
+```
+
+If your project is stored elsewhere, replace the path with your own.
+
+Since the frontend needs to load local CSV and JSON files, you should not open `frontend.html` directly by double-clicking it. Instead, start a local HTTP server in the project root directory:
+
+```bash
+python3 -m http.server 8000
+```
+
+If the command runs successfully, you should see output similar to:
+
+```text
+Serving HTTP on :: port 8000 ...
+```
+
+Then open the following address in your browser:
+
+```text
+http://localhost:8000/frontend.html
+```
