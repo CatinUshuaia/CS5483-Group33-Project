@@ -7,6 +7,7 @@ The repository currently contains:
 - baseline linear models (`LinearRegression`, `Ridge`, `Lasso`)
 - advanced tree-based models (`RandomForestRegressor`, `XGBRegressor`)
 - result plots and a browser-based comparison page
+- the project report file `Report.pdf`
 
 ## Project Scope
 
@@ -45,6 +46,7 @@ CS5483-Group33-Project/
 │   ├── modeling_README.md
 │   └── outputs/
 ├── frontend.html
+├── Report.pdf
 ├── requirements.txt
 ├── .gitignore
 └── LICENSE
@@ -151,8 +153,7 @@ http://localhost:8000/frontend.html
 ```
 
 ## Notes
-
-- `data_preprocessing/PREPROCESSING_DETAILS.md` is not currently tracked in the repository. The preprocessing script can generate or update it via `--details-path`.
+- `Report.pdf` is the submitted project report file for this repository.
 - `baseline_models/results/report.md` contains the current baseline experiment summary.
 - `modeling/modeling_README.md` documents the RF/XGBoost workflow and outputs.
 
