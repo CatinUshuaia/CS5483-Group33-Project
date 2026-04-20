@@ -3,7 +3,12 @@ import pandas as pd
 import numpy as np
 
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+    r2_score,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -14,6 +19,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def rmse(y_true, y_pred):
     return np.sqrt(mean_squared_error(y_true, y_pred))
+
+
+def mape(y_true, y_pred):
+    return mean_absolute_percentage_error(y_true, y_pred)
 
 
 def load_xy(df, target_col="life_exp_next_year"):
@@ -53,10 +62,14 @@ def main():
 
     test_mae = mean_absolute_error(y_test, test_pred)
     test_rmse = rmse(y_test, test_pred)
+    test_r2 = r2_score(y_test, test_pred)
+    test_mape = mape(y_test, test_pred)
 
     print("=== Final RF Test Result (no_clip) ===")
     print(f"Test MAE : {test_mae:.6f}")
     print(f"Test RMSE: {test_rmse:.6f}")
+    print(f"Test R^2 : {test_r2:.6f}")
+    print(f"Test MAPE: {test_mape:.6f}")
 
     pred_df = pd.DataFrame({
         "year": test_df["year"].values if "year" in test_df.columns else np.arange(len(test_df)),
