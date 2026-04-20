@@ -1,6 +1,11 @@
+# Core data processing
 pandas
 requests
-scikit-learn
-matplotlib
+
+# Modeling and evaluation
 numpy
+scikit-learn
 xgboost
+
+# Plotting
+matplotlib
