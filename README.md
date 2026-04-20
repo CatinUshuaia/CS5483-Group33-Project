@@ -1,15 +1,20 @@
 # CS5483 Group33 Project
 
-China next-year life expectancy prediction project with data preprocessing pipeline based on World Bank WDI indicators.
+China next-year life expectancy prediction project based on World Bank WDI indicators.
 
-## Project Overview
+This repository includes:
+- data preprocessing and fold-level dataset export
+- baseline linear models (Linear Regression / Ridge / Lasso)
+- advanced models (Random Forest / XGBoost)
+- frontend visualization for model result comparison
 
-This repository currently focuses on the preprocessing stage for model-ready datasets.
+## Project Scope
 
 - Data source: World Bank WDI API
 - Target variable: `life_exp_next_year`
 - Country: `CHN`
-- Modeling sample years: `1995-2022` (label uses next year)
+- Time range used in modeling: `1995-2022` (label uses next year)
+- Time-series split setting: train/validation on years before `2019`, final test on `2019-2022`
 
 ## Repository Structure
 
@@ -22,95 +27,123 @@ CS5483-Group33-Project/
 │   ├── preprocessing_scripts/
 │   │   ├── preprocess_china_lifeexp.py
 │   │   └── split_time_series_datasets.py
-│   ├── FEATURE_SELECTION_LITERATURE_NOTE.md
 │   ├── PREPROCESSING_DETAILS.md
-│   └── feature_selection_literature/
-└── ...
+│   └── FEATURE_SELECTION_LITERATURE_NOTE.md
+├── baseline_models/
+│   ├── train_baseline_models.py
+│   └── results/
+├── modeling/
+│   ├── train_rf_models.py
+│   ├── final_rf_test.py
+│   ├── final_rf_test_clip.py
+│   ├── train_xgboost_models.py
+│   ├── final_xgboost_test.py
+│   ├── plot_rf_results.py
+│   ├── plot_xgboost_results.py
+│   └── modeling_README.md
+├── frontend.html
+├── requirements.txt
+└── LICENSE
 ```
 
 ## Environment Setup
 
-Recommended Python version: 3.10+
+Recommended Python version: `3.10+`
 
-Install dependencies:
+Install base dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run Preprocessing
+For modeling scripts, make sure additional packages used by those scripts are installed (for example `numpy` and `xgboost`). See `modeling/modeling_README.md` for details.
 
-From repository root:
+## Quick Start (End-to-End)
+
+Run all commands from the repository root.
+
+### 1) Build base preprocessing dataset
 
 ```bash
 python data_preprocessing/preprocessing_scripts/preprocess_china_lifeexp.py
 ```
 
-## TimeSeriesSplit Dataset Export
-
-Export fold-level train/validation files with `TimeSeriesSplit`, then perform clip/scale inside each fold (fit on fold train only):
+### 2) Export fold-level datasets with `TimeSeriesSplit`
 
 ```bash
 python data_preprocessing/preprocessing_scripts/split_time_series_datasets.py --test-start-year 2019 --n-splits 4
 ```
 
 Default behavior:
-
-- Input base dataset:
-  - `data_preprocessing/dataset/wdi_china_lifeexp_model_ready_no_clip.csv`
+- Input base dataset: `data_preprocessing/dataset/wdi_china_lifeexp_model_ready_no_clip.csv`
 - Train/validation period: years before `2019`
 - Final test period: `2019-2022`
 - Output folder: `data_preprocessing/dataset/processeddataset/`
 
-## License
+### 3) Train baseline models (Linear / Ridge / Lasso)
 
-This project is licensed under the MIT License. See `LICENSE`.
+```bash
+python baseline_models/train_baseline_models.py
+```
+
+### 4) Train and evaluate advanced models (RF / XGBoost)
+
+```bash
+python modeling/train_rf_models.py
+python modeling/train_xgboost_models.py
+python modeling/final_rf_test.py
+python modeling/final_rf_test_clip.py
+python modeling/final_xgboost_test.py
+```
+
+### 5) Generate result plots
+
+```bash
+python modeling/plot_rf_results.py
+python modeling/plot_xgboost_results.py
+```
 
 ## Frontend Visualization
 
-This project also includes a frontend visualization page for comparing prediction results across different models. The page allows users to switch between models in the browser and view the corresponding prediction curves, coefficients or feature importance, and residual plots.
+The project includes a browser-based page (`frontend.html`) for comparing model outputs.
 
 ### Supported Visualizations
 
-- **Actual vs Predicted** line chart
-- **Top Coefficients** for linear models
-- **Feature Importance** for tree-based models
-- **Residuals on Test Set**
-- free switching between multiple models in the browser
+- Actual vs Predicted line chart
+- Top coefficients for linear models
+- Feature importance for tree-based models
+- Residuals on test set
+- Interactive model switching in browser
 
 ### Supported Models
 
-- Lasso
 - Linear Regression
 - Ridge
+- Lasso
 - Random Forest (clip)
 - Random Forest (no clip)
 - XGBoost (no clip)
 
-### How to Launch the Frontend
+### How to Launch
 
-Open a terminal and enter the root directory of this project:
-
-```bash
-cd ~/Desktop/CS5483-Group33-Project
-```
-
-If your project is stored elsewhere, replace the path with your own.
-
-Since the frontend needs to load local CSV and JSON files, you should not open `frontend.html` directly by double-clicking it. Instead, start a local HTTP server in the project root directory:
+Do not open `frontend.html` directly by double-clicking. Start a local HTTP server from the project root:
 
 ```bash
-python3 -m http.server 8000
+python -m http.server 8000
 ```
 
-If the command runs successfully, you should see output similar to:
-
-```text
-Serving HTTP on :: port 8000 ...
-```
-
-Then open the following address in your browser:
+Then open:
 
 ```text
 http://localhost:8000/frontend.html
 ```
+
+## Additional Documentation
+
+- Preprocessing details: `data_preprocessing/PREPROCESSING_DETAILS.md`
+- Modeling module usage and results: `modeling/modeling_README.md`
+- Baseline experiment report: `baseline_models/results/report.md`
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.
